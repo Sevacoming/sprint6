@@ -1,19 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
-  </head>
-  <body>
-    <form
-      enctype="multipart/form-data"
-      action="http://localhost:8080/upload"
-      method="post"
-    >
-      <input type="file" name="myFile" />
-      <input type="submit" value="upload" />
-    </form>
-  </body>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<title>Конвертер азбуки Морзе</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style>
+			:root {
+				--fg: #111;
+				--bg: #fff;
+				--muted: #666;
+				--border: #e5e7eb;
+			}
+			prefers-color-scheme: dark {
+				:root {
+					--fg: #f5f5f5;
+					--bg: #0b0b0b;
+					--muted: #9aa0a6;
+					--border: #262626;
+				}
+			}
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				color: var(--fg);
+				background: var(--bg);
+				font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial,
+					sans-serif;
+			}
+			.wrap {
+				max-width: 720px;
+				margin: 6rem auto;
+				padding: 0 1rem;
+			}
+			h1 {
+				font-size: 1.8rem;
+				margin: 0 0 0.5rem;
+			}
+			p {
+				color: var(--muted);
+				margin-top: 0;
+			}
+			form {
+				margin: 1.5rem 0;
+				padding: 1rem;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+			}
+			.row {
+				display: flex;
+				gap: 0.75rem;
+				align-items: center;
+				flex-wrap: wrap;
+			}
+			input[type='file'] {
+				padding: 0.5rem;
+				border: 1px dashed var(--border);
+				border-radius: 8px;
+				background: transparent;
+				color: inherit;
+			}
+			button {
+				padding: 0.6rem 1rem;
+				border-radius: 10px;
+				border: 1px solid var(--border);
+				background: transparent;
+				cursor: pointer;
+			}
+			button:hover {
+				transform: translateY(-1px);
+			}
+			pre {
+				white-space: pre-wrap;
+				word-break: break-word;
+				padding: 1rem;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				min-height: 6rem;
+			}
+			.hint {
+				font-size: 0.9rem;
+				color: var(--muted);
+				margin-top: 0.5rem;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<h1>Конвертер азбуки Морзе</h1>
+			<p>
+				Загрузите файл с русским текстом или кодом Морзе. Формат определяется
+				автоматически, результат вернётся ниже и сохранится в файл в корне
+				проекта.
+			</p>
+
+			<form
+				id="form"
+				action="/upload"
+				method="post"
+				enctype="multipart/form-data"
+			>
+				<div class="row">
+					<input id="file" type="file" name="file" required />
+					<button type="submit">Загрузить и конвертировать</button>
+				</div>
+				<div class="hint">
+					Для Морзе допускаются символы: ".", "-", "/", пробелы и переводы
+					строк.
+				</div>
+			</form>
+
+			<h2>Результат</h2>
+			<pre id="out">Здесь появится результат…</pre>
+		</div>
+
+		<script>
+			const form = document.getElementById('form')
+			const out = document.getElementById('out')
+			form.addEventListener('submit', async e => {
+				e.preventDefault()
+				out.textContent = 'Обрабатываем…'
+				try {
+					const resp = await fetch(form.action, {
+						method: 'POST',
+						body: new FormData(form),
+					})
+					const text = await resp.text()
+					out.textContent = resp.ok ? text : `Ошибка: ${text || resp.status}`
+				} catch (err) {
+					out.textContent = 'Ошибка сети: ' + err
+				}
+			})
+		</script>
+	</body>
 </html>
