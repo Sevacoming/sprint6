@@ -1,0 +1,8 @@
+# build artifacts
+morse.exe
+*.exe
+# конвертированные результаты
+*.txt
+# IDE
+.vscode/
+.idea/
