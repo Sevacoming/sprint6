@@ -1,0 +1,3 @@
+[morseapp] 2025/10/17 00:20:40 server.go:33: server is listening on :8080
+[morseapp] 2025/10/17 00:20:40 main.go:14: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+exit status 1

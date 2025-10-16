@@ -1,76 +1,61 @@
 package handlers
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"time"
+ "fmt"
+ "io"
+ "net/http"
+ "os"
+ "path/filepath"
+ "time"
 
-	"github.com/Sevacoming/sprint6/internal/service"
+ "github.com/Sevacoming/sprint6/internal/service"
 )
 
-// GET / — отдаем index.html
-func IndexHandler(logger *log.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "index.html")
-	}
+func Index(w http.ResponseWriter, r *http.Request) {
+ if r.Method != http.MethodGet {
+  http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+  return
+ }
+ http.ServeFile(w, r, "index.html")
 }
 
-// POST /upload — принимаем файл, конвертируем, сохраняем результат и возвращаем его
-func UploadHandler(logger *log.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.Header().Set("Allow", http.MethodPost)
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
+func Upload(w http.ResponseWriter, r *http.Request) {
+ if r.Method != http.MethodPost {
+  http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+  return
+ }
 
-		if err := r.ParseMultipartForm(16 << 20); err != nil {
-			logger.Printf("parse form error: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
+ if err := r.ParseMultipartForm(10 << 20); err != nil {
+  http.Error(w, "parse form error", http.StatusInternalServerError)
+  return
+ }
 
-		file, header, err := r.FormFile("file")
-		if err != nil {
-			logger.Printf("form file error: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
+ f, fh, err := r.FormFile("file")
+ if err != nil {
+  http.Error(w, "get file error", http.StatusInternalServerError)
+  return
+ }
+ defer f.Close()
 
-		data, err := io.ReadAll(file)
-		if err != nil {
-			logger.Printf("read file error: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
+ data, err := io.ReadAll(f)
+ if err != nil {
+  http.Error(w, "read file error", http.StatusInternalServerError)
+  return
+ }
 
-		result, err := service.DetectAndConvert(string(data))
-		if err != nil {
-			logger.Printf("convert error: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
+ converted, err := service.DetectAndConvert(string(data))
+ if err != nil {
+  http.Error(w, "convert error: "+err.Error(), http.StatusInternalServerError)
+  return
+ }
 
-		// Имя результата: UTC timestamp + расширение исходного файла
-		tstamp := time.Now().UTC().Format("20060102T150405Z0700")
-		ext := filepath.Ext(header.Filename)
-		if ext == "" {
-			ext = ".txt"
-		}
-		outName := fmt.Sprintf("%s%s", tstamp, ext)
+ ext := filepath.Ext(fh.Filename)
+ name := time.Now().UTC().Format("20060102T150405") + ext
+ if err := os.WriteFile(name, []byte(converted), 0644); err != nil {
+  http.Error(w, "save result error", http.StatusInternalServerError)
+  return
+ }
 
-		if err := os.WriteFile(outName, []byte(result), 0o644); err != nil {
-			logger.Printf("write result file error: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte(result))
-	}
+ w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+ fmt.Fprint(w, converted)
 }
