@@ -26,11 +26,10 @@ func New(logger *log.Logger) *Server {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
-
 	return &Server{Logger: logger, HTTP: s}
 }
 
 func (s *Server) Start() error {
-	s.Logger.Println("server.go: server is listening on :8080")
+	s.Logger.Printf("server is listening on %s", s.HTTP.Addr)
 	return s.HTTP.ListenAndServe()
 }

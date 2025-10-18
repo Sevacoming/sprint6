@@ -1,8 +1,17 @@
-# go / windows bins
+# Go
+bin/
+*.exe
+*.out
+*.test
+
+# OS
+.DS_Store
+Thumbs.db
+*.exe
+*.exe~
+
+# build artefacts
 morse.exe
 *.exe
 *.log
 *.pid
-/bin/
-/dist/
-/build/
