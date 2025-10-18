@@ -17,7 +17,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /upload — принять файл под именем "file", автоопределить формат и вернуть результат
-func Upload(w http.ResponseWriter, r *http.Request) {
+func UploadLegacy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
