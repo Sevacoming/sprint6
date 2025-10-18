@@ -19,7 +19,7 @@ func New(logger *log.Logger) *Server {
 	mux.HandleFunc("/upload", handlers.Upload)
 
 	s := &http.Server{
-		Addr:         ":8080", // строго 8080 для автотестов
+		Addr:         ":8080", // строго 8080 — так ждут автотесты
 		Handler:      mux,
 		ErrorLog:     logger,
 		ReadTimeout:  5 * time.Second,
@@ -30,6 +30,6 @@ func New(logger *log.Logger) *Server {
 }
 
 func (s *Server) Start() error {
-	s.Logger.Printf("server is listening on %s", s.HTTP.Addr)
+	s.Logger.Println("server is listening on :8080")
 	return s.HTTP.ListenAndServe()
 }

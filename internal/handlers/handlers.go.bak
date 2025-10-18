@@ -36,7 +36,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	converted, err := service.ConvertFromReader(f)
+	converted, err := service.Convert(f)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("convert error: %v", err), http.StatusBadRequest)
 		return

@@ -1,17 +1,9 @@
-# Go
+# Binaries
 bin/
 *.exe
 *.out
 *.test
 
-# OS
-.DS_Store
-Thumbs.db
-*.exe
-*.exe~
-
-# build artefacts
-morse.exe
-*.exe
-*.log
-*.pid
+# Go build cache / editor junk
+*.swp
+*.DS_Store
