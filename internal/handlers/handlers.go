@@ -1,61 +1,52 @@
 package handlers
 
 import (
- "fmt"
- "io"
- "net/http"
- "os"
- "path/filepath"
- "time"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 
- "github.com/Sevacoming/sprint6/internal/service"
+	"github.com/Sevacoming/sprint6/internal/service"
 )
 
+// Index: отдаёт статический index.html
 func Index(w http.ResponseWriter, r *http.Request) {
- if r.Method != http.MethodGet {
-  http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-  return
- }
- http.ServeFile(w, r, "index.html")
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.ServeFile(w, r, "index.html")
 }
 
+// Upload: принимает файл, определяет формат и конвертирует
 func Upload(w http.ResponseWriter, r *http.Request) {
- if r.Method != http.MethodPost {
-  http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-  return
- }
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
- if err := r.ParseMultipartForm(10 << 20); err != nil {
-  http.Error(w, "parse form error", http.StatusInternalServerError)
-  return
- }
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "failed to read file: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
 
- f, fh, err := r.FormFile("file")
- if err != nil {
-  http.Error(w, "get file error", http.StatusInternalServerError)
-  return
- }
- defer f.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read file body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
 
- data, err := io.ReadAll(f)
- if err != nil {
-  http.Error(w, "read file error", http.StatusInternalServerError)
-  return
- }
+	out, err := service.DetectAndConvert(string(data))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
- converted, err := service.DetectAndConvert(string(data))
- if err != nil {
-  http.Error(w, "convert error: "+err.Error(), http.StatusInternalServerError)
-  return
- }
+	// вернуть в ответ и записать в файл в корне проекта
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprint(w, out)
 
- ext := filepath.Ext(fh.Filename)
- name := time.Now().UTC().Format("20060102T150405") + ext
- if err := os.WriteFile(name, []byte(converted), 0644); err != nil {
-  http.Error(w, "save result error", http.StatusInternalServerError)
-  return
- }
-
- w.Header().Set("Content-Type", "text/plain; charset=utf-8")
- fmt.Fprint(w, converted)
+	_ = os.WriteFile("result.txt", []byte(out), 0644)
 }
