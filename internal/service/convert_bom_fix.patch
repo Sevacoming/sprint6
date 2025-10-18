@@ -1,0 +1,28 @@
+*** a/internal/service/convert.go
+--- b/internal/service/convert.go
+***************
+*** 78,83 ****
+--- 78,85 ----
+   for _, r := range strings.ToUpper(s) {
+    switch r {
++   case '\uFEFF': // BOM в начале файла/строки
++    continue
+    case '\n':
+     b.WriteByte('\n')
+     needSpace = false
+***************
+*** 97,102 ****
+--- 99,112 ----
+    default:
+     if err := writeLetter(r); err != nil {
++     // Мягкая нормализация: если прилетел неразборный символ-пунктуация
++     // (например, CRLF-вариант или невидимые разделители), попробуем
++     // трактовать как пробел между словами.
++     if r == '\r' || r == '\t' {
++      // уже обработаны выше, но оставим на всякий
++      continue
++     }
+      return "", err
+     }
+    }
+   }

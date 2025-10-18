@@ -1,0 +1,7 @@
+HTTP/1.1 405 Method Not Allowed
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Sat, 18 Oct 2025 20:51:03 GMT
+Content-Length: 19
+
+method not allowed
