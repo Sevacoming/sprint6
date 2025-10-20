@@ -3,22 +3,28 @@ package handlers
 import (
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	service "github.com/Sevacoming/sprint6/internal/service"
 )
 
-// Index — оставляем как простой health/page (если нужен по заданию)
+// Index — отдаём корневой index.html из репозитория.
 func Index(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	_, _ = io.WriteString(w, "OK")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// Если файл есть — отдадим его, иначе вернём 500 (по замечанию ревьюера коды при ошибках)
+	if _, err := os.Stat("index.html"); err == nil {
+		http.ServeFile(w, r, "index.html")
+		return
+	}
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
-// Upload принимает данные тремя способами (не ломая исходную форму):
-// 1) multipart/form-data: поле "file"  (как в curl)
-// 2) application/x-www-form-urlencoded: поле "text" (как на форме из задания)
-// 3) другое: сырое тело запроса (text/plain; charset=utf-8)
-// Успех: 200 text/plain; Ошибки конвертации: 500 (как просил ревьюер).
+// Upload читает multipart поле "myFile" (как в шаблоне), а также поддерживает:
+// - fallback на поле "file" (для curl);
+// - application/x-www-form-urlencoded: поле "text";
+// - сырое text/plain тело.
+// Коды: 200 — успех; 400 — пустой/непрочитанный ввод; 500 — ошибка конвертации.
 func Upload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -27,22 +33,33 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	var input string
 
-	// Попытка №1: multipart "file"
-	if f, _, err := r.FormFile("file"); err == nil {
+	// 1) multipart: поле "myFile" (строго по шаблону)
+	if f, _, err := r.FormFile("myFile"); err == nil {
 		defer f.Close()
-		b, _ := io.ReadAll(f)
-		input = string(b)
-	} else {
-		// Попытка №2: form field "text"
-		_ = r.ParseForm()
-		if v := r.Form.Get("text"); v != "" {
-			input = v
-		}
-		// Попытка №3: сырое тело
-		if input == "" {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
+		if b, err := io.ReadAll(f); err == nil {
 			input = string(b)
+		}
+	} else {
+		// 1a) fallback: поле "file" (для совместимости с curl)
+		if f2, _, err2 := r.FormFile("file"); err2 == nil {
+			defer f2.Close()
+			if b, err := io.ReadAll(f2); err == nil {
+				input = string(b)
+			}
+		}
+		// 2) x-www-form-urlencoded: поле "text"
+		if input == "" {
+			_ = r.ParseForm()
+			if v := r.Form.Get("text"); v != "" {
+				input = v
+			}
+		}
+		// 3) сырое тело
+		if input == "" {
+			if b, err := io.ReadAll(r.Body); err == nil {
+				_ = r.Body.Close()
+				input = string(b)
+			}
 		}
 	}
 
@@ -54,12 +71,12 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	result, err := service.Convert(input)
 	if err != nil {
-		// по замечанию ревьюера — 500 при ошибках
+		// по требованию ревьюера — 500 на ошибках конвертации
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = io.WriteString(w, result) // без завершающего \n
+	_, _ = io.WriteString(w, result)
 }
